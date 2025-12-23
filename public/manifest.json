@@ -1,0 +1,17 @@
+{
+  "name": "Pulse",
+  "short_name": "Pulse",
+  "description": "大切な瞬間からの時間を記録するアプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fb",
+  "theme_color": "#5b7bc7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-dark-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ]
+}
