@@ -60,12 +60,27 @@ export function EventCard({ event, language }: EventCardProps) {
     const now = new Date()
     const totalMs = now.getTime() - start.getTime()
 
+    // Calendar-based year calculation
+    let totalYears = now.getFullYear() - start.getFullYear()
+    let yearCheckDate = new Date(start)
+    yearCheckDate.setFullYear(start.getFullYear() + totalYears)
+    if (yearCheckDate > now) {
+      totalYears--
+    }
+
+    // Calendar-based month calculation  
+    let totalMonths = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth())
+    let monthCheckDate = new Date(start)
+    monthCheckDate.setMonth(start.getMonth() + totalMonths)
+    if (monthCheckDate > now) {
+      totalMonths--
+    }
+
+    // Keep original calculations for days, hours, minutes, seconds
     const totalSeconds = totalMs / 1000
     const totalMinutes = totalSeconds / 60
     const totalHours = totalMinutes / 60
     const totalDays = totalHours / 24
-    const totalMonths = totalDays / 30.44
-    const totalYears = totalDays / 365.25
 
     return {
       years: totalYears.toFixed(1),
@@ -89,9 +104,9 @@ export function EventCard({ event, language }: EventCardProps) {
     const SS = String(date.getSeconds()).padStart(2, "0")
 
     if (language === "en") {
-      return `Since ${yyyy}/${mm}/${dd} ${HH}:${MM}:${SS}`
+      return `${yyyy}/${mm}/${dd} ${HH}:${MM}:${SS}`
     }
-    return `${yyyy}年${mm}月${dd}日 ${HH}:${MM}:${SS}から`
+    return `${yyyy}年${mm}月${dd}日 ${HH}:${MM}:${SS}`
   }
 
   const labels =
@@ -120,7 +135,12 @@ export function EventCard({ event, language }: EventCardProps) {
   return (
     <Card className="p-4 sm:p-5 md:p-6 border-2 shadow-lg flex flex-col h-full max-h-[calc(100vh-180px)] overflow-hidden">
       <div className="mb-3 sm:mb-4 text-center flex-shrink-0">
-        <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2">{event.title}</h3>
+        <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mb-2">
+          {event.title}
+          <span className="text-xl sm:text-2xl md:text-3xl font-normal text-muted-foreground ml-2">
+            {language === "en" ? "since" : "から"}
+          </span>
+        </h3>
         <div className="text-sm sm:text-base text-muted-foreground">
           <p>{formatDateWithSince(event.startDate)}</p>
         </div>
