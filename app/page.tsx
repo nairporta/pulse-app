@@ -70,6 +70,19 @@ export default function Home() {
         console.error("Failed to parse saved events");
         setEvents([]);
       }
+    } else {
+      // Create test data: event from 80 years ago
+      const eightyYearsAgo = new Date();
+      eightyYearsAgo.setFullYear(eightyYearsAgo.getFullYear() - 80);
+      
+      const testEvent: Event = {
+        id: "test-80years-ago",
+        title: "80年前の出来事",
+        startDate: eightyYearsAgo.toISOString(),
+        messages: []
+      };
+      
+      setEvents([testEvent]);
     }
 
     const savedTheme = localStorage.getItem("pulseTheme");

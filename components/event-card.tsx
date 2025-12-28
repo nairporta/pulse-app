@@ -200,7 +200,7 @@ export function EventCard({ event, language }: EventCardProps) {
         <h4 className="text-sm sm:text-base font-semibold text-muted-foreground/70 text-center mb-1">
           {labels.elapsed}
         </h4>
-        <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
+        <div className="bg-muted/30 rounded-lg p-3 sm:p-4 max-w-[260px] mx-auto">
           <div className="flex flex-col gap-2 sm:gap-2.5">
             <div className="flex justify-between items-baseline">
               <span className="text-lg sm:text-xl md:text-2xl font-bold text-foreground tabular-nums">
