@@ -165,7 +165,7 @@ export function Settings({
   return (
     <div
       className="space-y-6 pb-4 pt-6 overflow-y-auto"
-      style={{ maxHeight: "calc(100vh - 112px)" }}
+      style={{ maxHeight: "calc(100vh - 152px)" }}
     >
       <div>
         <h2 className="text-xl font-semibold mb-4 text-foreground">

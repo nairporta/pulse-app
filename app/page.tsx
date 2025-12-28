@@ -264,7 +264,7 @@ export default function Home() {
 
       <main
         className="flex-1 overflow-hidden"
-        style={{ height: "calc(100vh - 112px)" }}
+        style={{ height: "calc(100vh - 152px)" }}
       >
         <div className="container mx-auto px-4 h-full max-w-2xl">
           {currentView === "pulse" && (
