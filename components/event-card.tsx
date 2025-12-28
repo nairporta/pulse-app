@@ -140,7 +140,7 @@ export function EventCard({ event, language }: EventCardProps) {
 
   return (
     <Card className="p-4 sm:p-5 md:p-6 border-2 shadow-lg flex flex-col h-full max-h-[calc(100vh-180px)] overflow-hidden">
-      <div className="mb-3 sm:mb-4 text-center flex-shrink-0">
+      <div className="mb-3 sm:mb-4 pt-6 text-center flex-shrink-0">
         <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-2">
           {event.title}
         </h3>
@@ -197,7 +197,7 @@ export function EventCard({ event, language }: EventCardProps) {
       </div>
 
       <div className="flex-shrink-0 min-h-0 overflow-y-auto">
-        <h4 className="text-sm sm:text-base font-semibold text-muted-foreground/70 text-center mb-2 sm:mb-3">
+        <h4 className="text-sm sm:text-base font-semibold text-muted-foreground/70 text-center mb-1">
           {labels.elapsed}
         </h4>
         <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
