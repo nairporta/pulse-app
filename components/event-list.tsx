@@ -1,32 +1,41 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { AnimatePresence, motion } from "framer-motion"
-import type { Event } from "@/app/page"
-import { EventCard } from "./event-card"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { Button } from "./ui/button"
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import type { Event } from "@/app/page";
+import { EventCard } from "./event-card";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface EventListProps {
-  events: Event[]
-  onDelete: (id: string) => void
-  onAddMessage: (eventId: string, text: string, author: "me" | "partner") => void
-  language: "ja" | "en"
+  events: Event[];
+  onDelete: (id: string) => void;
+  onAddMessage: (
+    eventId: string,
+    text: string,
+    author: "me" | "partner"
+  ) => void;
+  language: "ja" | "en";
 }
 
-export function EventList({ events, onDelete, onAddMessage, language }: EventListProps) {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [direction, setDirection] = useState<1 | -1>(1)
+export function EventList({
+  events,
+  onDelete,
+  onAddMessage,
+  language,
+}: EventListProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
 
   const handlePrevious = () => {
-    setDirection(-1)
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : events.length - 1))
-  }
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : events.length - 1));
+  };
 
   const handleNext = () => {
-    setDirection(1)
-    setCurrentIndex((prev) => (prev < events.length - 1 ? prev + 1 : 0))
-  }
+    setDirection(1);
+    setCurrentIndex((prev) => (prev < events.length - 1 ? prev + 1 : 0));
+  };
 
   const variants = {
     enter: (direction: number) => ({
@@ -41,7 +50,7 @@ export function EventList({ events, onDelete, onAddMessage, language }: EventLis
       x: direction > 0 ? "-100%" : "100%",
       opacity: 0,
     }),
-  }
+  };
 
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-between py-6">
@@ -92,16 +101,18 @@ export function EventList({ events, onDelete, onAddMessage, language }: EventLis
       </div>
 
       {events.length > 1 && (
-        <div className="flex gap-2 mt-6 flex-shrink-0">
+        <div className="flex gap-2 mt-3 flex-shrink-0">
           {events.map((_, index) => (
             <button
               key={index}
               onClick={() => {
-                setDirection(index > currentIndex ? 1 : -1)
-                setCurrentIndex(index)
+                setDirection(index > currentIndex ? 1 : -1);
+                setCurrentIndex(index);
               }}
               className={`rounded-full transition-all ${
-                index === currentIndex ? "bg-primary w-6 h-2" : "bg-primary/30 w-2 h-2"
+                index === currentIndex
+                  ? "bg-primary w-6 h-2"
+                  : "bg-primary/30 w-2 h-2"
               }`}
               aria-label={`Go to event ${index + 1}`}
             />
@@ -109,5 +120,5 @@ export function EventList({ events, onDelete, onAddMessage, language }: EventLis
         </div>
       )}
     </div>
-  )
+  );
 }
