@@ -41,7 +41,8 @@ export function AddEventForm({ onAdd, onCancel }: AddEventFormProps) {
   }
 
   return (
-    <Card className="p-6 bg-card border-border shadow-md">
+    <div className="pt-6">
+      <Card className="p-6 bg-card border-border shadow-md">
       {step === "capture" && (
         <div className="text-center space-y-6">
           <h3 className="text-xl font-semibold text-foreground">新しいイベントを記録</h3>
@@ -95,6 +96,7 @@ export function AddEventForm({ onAdd, onCancel }: AddEventFormProps) {
           </form>
         </div>
       )}
-    </Card>
+      </Card>
+    </div>
   )
 }

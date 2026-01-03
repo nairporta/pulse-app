@@ -383,7 +383,7 @@ export default function Home() {
         className="flex-1 overflow-hidden"
         style={{ height: "calc(100vh - 152px)" }}
       >
-        <div className="container mx-auto px-4 pt-6 h-full max-w-2xl">
+        <div className="container mx-auto px-4 h-full max-w-2xl">
           {currentView === "pulse" && (
             <>
               {showAddForm && (
