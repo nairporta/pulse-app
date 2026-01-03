@@ -182,13 +182,15 @@ export class DatabaseService {
 
   async loginUser(name: string, pairingCode: string, saveSession: boolean = true): Promise<Account | null> {
     try {
-      // 一旦RLSを回避して認証確認（service roleで実行される必要がある場合の対処）
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('name', name)
-        .eq('pairing_code', pairingCode)
-        .limit(1)
+      console.log('loginUser called with:', { name, pairingCode })
+      
+      // 名前とペアリングコードでユーザーを検索する専用関数を作成して使用
+      const { data, error } = await supabase.rpc('find_user_by_name_and_code', {
+        search_name: name,
+        search_code: pairingCode
+      })
+
+      console.log('loginUser RPC result:', { data, error })
 
       if (error) {
         console.error('Database error during login:', error)
@@ -201,21 +203,22 @@ export class DatabaseService {
       }
 
       const userData = data[0]
+      console.log('Login successful for user:', userData)
 
       // RLSコンテキスト設定
-      await RLSSessionManager.setRLSContext(userData.id)
+      await RLSSessionManager.setRLSContext(userData.user_id)
 
       // Save persistent session
       if (saveSession) {
         RLSSessionManager.saveSession({
-          id: userData.id,
-          name: userData.name,
-          pairingCode: userData.pairing_code
+          id: userData.user_id,
+          name: userData.user_name,
+          pairingCode: userData.user_pairing_code
         })
       }
 
       // 完全なユーザー情報を取得（パートナー情報含む）
-      return await this.getCompleteAccount(userData.id)
+      return await this.getCompleteAccount(userData.user_id)
     } catch (error) {
       console.error('Login failed:', error)
       return null
@@ -223,26 +226,41 @@ export class DatabaseService {
   }
 
   async pairUsers(userId: string, partnerCode: string): Promise<boolean> {
-    const partner = await this.getUserByPairingCode(partnerCode)
-    if (!partner) return false
+    try {
+      console.log('pairUsers called with:', { userId, partnerCode })
+      
+      // 双方向ペアリング専用の関数を使用
+      const { data, error } = await supabase.rpc('pair_users_bidirectional', {
+        current_user_id: userId,
+        partner_code: partnerCode
+      })
 
-    // Update both users to be partners
-    const { error: error1 } = await supabase
-      .from('users')
-      .update({ partner_id: partner.id })
-      .eq('id', userId)
+      console.log('pairUsers RPC result:', { data, error })
 
-    const { error: error2 } = await supabase
-      .from('users')
-      .update({ partner_id: userId })
-      .eq('id', partner.id)
+      if (error) {
+        console.error('Database error during pairing:', error)
+        return false
+      }
 
-    if (error1 || error2) {
-      console.error('Error pairing users:', error1 || error2)
+      if (!data || data.length === 0) {
+        console.log('No result from pairing function')
+        return false
+      }
+
+      const result = data[0]
+      console.log('Pairing result:', result)
+
+      if (!result.success) {
+        console.log('Pairing failed:', result.result_message)
+        return false
+      }
+
+      console.log('Users paired successfully:', result.paired_user1_id, 'with', result.paired_user2_id)
+      return true
+    } catch (error) {
+      console.error('Pairing failed:', error)
       return false
     }
-
-    return true
   }
 
   async getUser(userId: string) {
