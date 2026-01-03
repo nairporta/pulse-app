@@ -31,6 +31,7 @@ interface SettingsProps {
   onLanguageChange: (lang: "ja" | "en") => void;
   onLogout: () => void;
   onPairPartner: (partnerId: string, partnerName: string) => Promise<boolean>;
+  onUpdateUserName: (newName: string) => Promise<boolean>;
 }
 
 const themes = [
@@ -71,6 +72,7 @@ export function Settings({
   onLanguageChange,
   onLogout,
   onPairPartner,
+  onUpdateUserName,
 }: SettingsProps) {
   const [showEditSection, setShowEditSection] = useState(false);
   const [editingEvent, setEditingEvent] = useState<{
@@ -82,6 +84,8 @@ export function Settings({
   const [pairPartnerName, setPairPartnerName] = useState("");
   const [pairPartnerCode, setPairPartnerCode] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState("");
 
   const t = {
     accountInfo: language === "en" ? "Account Information" : "アカウント情報",
@@ -119,6 +123,8 @@ export function Settings({
         : "この操作は取り消せません。",
     copyButton: language === "en" ? "Copy" : "コピー",
     copiedButton: language === "en" ? "Copied" : "コピーしました",
+    editName: language === "en" ? "Edit Name" : "名前を編集",
+    newName: language === "en" ? "New Name" : "新しい名前",
   };
 
   const handleCopyCode = async () => {
@@ -162,6 +168,31 @@ export function Settings({
     }
   };
 
+  const handleStartEditName = () => {
+    setEditedName(account.userName);
+    setIsEditingName(true);
+  };
+
+  const handleSaveName = async () => {
+    if (editedName.trim() && editedName.trim() !== account.userName) {
+      const success = await onUpdateUserName(editedName.trim());
+      if (success) {
+        setIsEditingName(false);
+        setEditedName("");
+      } else {
+        alert(language === "en" ? "Failed to update name" : "名前の更新に失敗しました");
+      }
+    } else {
+      setIsEditingName(false);
+      setEditedName("");
+    }
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setEditedName("");
+  };
+
   return (
     <div
       className="space-y-6 pb-4 pt-6 overflow-y-auto"
@@ -175,9 +206,53 @@ export function Settings({
           <div className="space-y-3 text-sm">
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">{t.yourName}</span>
-              <span className="font-semibold text-foreground">
-                {account.userName}
-              </span>
+              <div className="flex items-center gap-2">
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editedName}
+                      onChange={(e) => setEditedName(e.target.value)}
+                      className="h-7 w-32 text-sm"
+                      placeholder={t.newName}
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSaveName();
+                        if (e.key === 'Escape') handleCancelEditName();
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleSaveName}
+                      className="h-7 px-2"
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCancelEditName}
+                      className="h-7 px-2"
+                    >
+                      ×
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <span className="font-semibold text-foreground">
+                      {account.userName}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleStartEditName}
+                      className="h-7 px-2"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
             <div className="flex justify-between items-center gap-2">
               <span className="text-muted-foreground">{t.yourCode}</span>

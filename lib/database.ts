@@ -463,6 +463,30 @@ export class DatabaseService {
       .update({ last_login: new Date().toISOString() })
       .eq('id', userId)
   }
+
+  async updateUserName(userId: string, newName: string): Promise<boolean> {
+    try {
+      console.log('updateUserName called with:', { userId, newName })
+      
+      await RLSSessionManager.setRLSContext(userId)
+      
+      const { error } = await supabase
+        .from('users')
+        .update({ name: newName })
+        .eq('id', userId)
+
+      if (error) {
+        console.error('Error updating user name:', error)
+        return false
+      }
+
+      console.log('User name updated successfully')
+      return true
+    } catch (error) {
+      console.error('Failed to update user name:', error)
+      return false
+    }
+  }
   
   logout() {
     RLSSessionManager.clearSession()

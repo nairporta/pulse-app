@@ -265,6 +265,29 @@ export default function Home() {
     return false;
   };
 
+  const handleUpdateUserName = async (newName: string) => {
+    if (account) {
+      const success = await db.updateUserName(account.userId, newName);
+      if (success) {
+        // Update local account state
+        const updatedAccount = { ...account, userName: newName };
+        setAccount(updatedAccount);
+        localStorage.setItem("pulseAccount", JSON.stringify(updatedAccount));
+        
+        // Update session storage
+        const sessionData = { 
+          id: account.userId, 
+          name: newName, 
+          pairingCode: account.pairingCode || "" 
+        };
+        localStorage.setItem('pulseUserSession', JSON.stringify(sessionData));
+        
+        return true;
+      }
+    }
+    return false;
+  };
+
   const handleAddEvent = async (title: string, startDate: string) => {
     if (account) {
       const newEvent = await db.createEvent(
@@ -433,6 +456,7 @@ export default function Home() {
               onLanguageChange={setLanguage}
               onLogout={handleLogout}
               onPairPartner={handlePairPartner}
+              onUpdateUserName={handleUpdateUserName}
             />
           )}
         </div>
