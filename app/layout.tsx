@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Playfair_Display, Geist } from "next/font/google"
 import { Analytics } from "@vercel/analytics/next"
 import "./globals.css"
@@ -8,16 +8,14 @@ const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-serif"
 const geist = Geist({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Together - Track Your Special Moments",
+  title: "Pulse - Track Your Special Moments",
   description: "A romantic way for couples to track time since their special moment started",
   generator: "v0.app",
   manifest: "/manifest.json",
-  themeColor: "#ffc9d4",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Together",
+    title: "Pulse",
   },
   icons: {
     icon: [
@@ -36,6 +34,14 @@ export const metadata: Metadata = {
     ],
     apple: "/apple-icon.png",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#ffc9d4",
 }
 
 export default function RootLayout({

@@ -10,6 +10,7 @@ import { AddPartnerScreen } from "@/components/add-partner-screen";
 import { Plus, Clock, SettingsIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generatePairingCode } from "@/lib/pairing-utils";
+import { db } from "@/lib/database";
 
 export interface Event {
   id: string;
@@ -28,8 +29,10 @@ export interface EventMessage {
 export interface Account {
   userId: string;
   userName: string;
+  pairingCode?: string;
   partnerId?: string;
   partnerName?: string;
+  partnerPairingCode?: string;
 }
 
 type View = "pulse" | "settings";
@@ -50,40 +53,68 @@ export default function Home() {
   } | null>(null);
 
   useEffect(() => {
-    const savedAccount = localStorage.getItem("pulseAccount");
-    if (savedAccount) {
-      try {
-        const parsed = JSON.parse(savedAccount);
-        setAccount(parsed);
+    const initializeApp = async () => {
+      // Try auto-login first (persistent session)
+      const autoLoginAccount = await db.tryAutoLogin();
+      if (autoLoginAccount) {
+        setAccount(autoLoginAccount);
         setAuthFlow("authenticated");
-      } catch (e) {
-        console.error("Failed to parse account");
-      }
-    }
 
-    const saved = localStorage.getItem("pulseEvents");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setEvents(parsed);
-      } catch (e) {
-        console.error("Failed to parse saved events");
-        setEvents([]);
+        // Load events from database
+        const dbEvents = await db.getEvents(autoLoginAccount.userId);
+        setEvents(dbEvents);
+
+        // Set up real-time subscription
+        const subscription = db.subscribeToEvents(
+          autoLoginAccount.userId,
+          setEvents
+        );
+        return () => subscription.unsubscribe();
+      } else {
+        // Fallback: try legacy localStorage account
+        const savedAccount = localStorage.getItem("pulseAccount");
+        if (savedAccount) {
+          try {
+            const parsed = JSON.parse(savedAccount);
+            
+            // Check if pairingCode is missing (legacy account)
+            if (!parsed.pairingCode) {
+              console.warn("Legacy account missing pairingCode, clearing localStorage");
+              localStorage.removeItem("pulseAccount");
+              return;
+            }
+            
+            setAccount(parsed);
+            setAuthFlow("authenticated");
+
+            // Load events from database
+            const dbEvents = await db.getEvents(parsed.userId);
+            setEvents(dbEvents);
+
+            // Set up real-time subscription
+            const subscription = db.subscribeToEvents(parsed.userId, setEvents);
+            return () => subscription.unsubscribe();
+          } catch (e) {
+            console.error("Failed to parse legacy account:", e);
+            localStorage.removeItem("pulseAccount");
+          }
+        }
+
+        // Final fallback: load from localStorage events only
+        const saved = localStorage.getItem("pulseEvents");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            setEvents(parsed);
+          } catch (e) {
+            console.error("Failed to parse saved events");
+            setEvents([]);
+          }
+        }
       }
-    } else {
-      // Create test data: event from 80 years ago
-      const eightyYearsAgo = new Date();
-      eightyYearsAgo.setFullYear(eightyYearsAgo.getFullYear() - 80);
-      
-      const testEvent: Event = {
-        id: "test-80years-ago",
-        title: "80年前の出来事",
-        startDate: eightyYearsAgo.toISOString(),
-        messages: []
-      };
-      
-      setEvents([testEvent]);
-    }
+    };
+
+    initializeApp();
 
     const savedTheme = localStorage.getItem("pulseTheme");
     if (savedTheme) {
@@ -106,7 +137,10 @@ export default function Home() {
   }, [language]);
 
   useEffect(() => {
-    localStorage.setItem("pulseEvents", JSON.stringify(events));
+    // Keep localStorage as offline backup
+    if (events.length > 0) {
+      localStorage.setItem("pulseEvents", JSON.stringify(events));
+    }
   }, [events]);
 
   const handleWelcomeComplete = (name: string, mode: "create" | "join") => {
@@ -120,15 +154,21 @@ export default function Home() {
     }
   };
 
-  const handleCodeContinue = () => {
+  const handleCodeContinue = async () => {
     if (tempUserData) {
-      const newAccount: Account = {
-        userId: tempUserData.code,
-        userName: tempUserData.name,
-      };
-      setAccount(newAccount);
-      localStorage.setItem("pulseAccount", JSON.stringify(newAccount));
-      setAuthFlow("authenticated");
+      // Create user in database
+      const newAccount = await db.createUser(
+        tempUserData.name,
+        tempUserData.code
+      );
+      if (newAccount) {
+        setAccount(newAccount);
+        localStorage.setItem("pulseAccount", JSON.stringify(newAccount));
+        setAuthFlow("authenticated");
+
+        // Set up real-time subscription
+        const subscription = db.subscribeToEvents(newAccount.userId, setEvents);
+      }
     }
   };
 
@@ -140,17 +180,37 @@ export default function Home() {
     partnerName: string,
     partnerCode: string
   ) => {
-    // For now, we simulate the pairing
     if (tempUserData) {
-      const newAccount: Account = {
-        userId: tempUserData.code,
-        userName: tempUserData.name,
-        partnerId: partnerCode,
-        partnerName: partnerName,
-      };
-      setAccount(newAccount);
-      localStorage.setItem("pulseAccount", JSON.stringify(newAccount));
-      setAuthFlow("authenticated");
+      // Create user first
+      const newAccount = await db.createUser(
+        tempUserData.name,
+        tempUserData.code
+      );
+      if (newAccount) {
+        // Pair with partner
+        const pairingSuccess = await db.pairUsers(
+          newAccount.userId,
+          partnerCode
+        );
+        if (pairingSuccess) {
+          // Get complete updated account info
+          const updatedAccount = await db.getCompleteAccount(newAccount.userId);
+          if (updatedAccount) {
+            setAccount(updatedAccount);
+            localStorage.setItem(
+              "pulseAccount",
+              JSON.stringify(updatedAccount)
+            );
+            setAuthFlow("authenticated");
+
+            // Set up real-time subscription
+            const subscription = db.subscribeToEvents(
+              updatedAccount.userId,
+              setEvents
+            );
+          }
+        }
+      }
     }
   };
 
@@ -158,70 +218,114 @@ export default function Home() {
     setAuthFlow("code-display");
   };
 
+  const handleLogin = async (name: string, code: string) => {
+    const loginAccount = await db.loginUser(name, code);
+    if (loginAccount) {
+      setAccount(loginAccount);
+      localStorage.setItem("pulseAccount", JSON.stringify(loginAccount));
+      setAuthFlow("authenticated");
+
+      // Load user's events
+      const userEvents = await db.getEvents(loginAccount.userId);
+      setEvents(userEvents);
+
+      // Set up real-time subscription
+      const subscription = db.subscribeToEvents(loginAccount.userId, setEvents);
+    } else {
+      alert("ログインに失敗しました。名前とコードを確認してください。");
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem("pulseAccount");
+    db.logout(); // Clear persistent session
+    localStorage.removeItem("pulseAccount"); // Clear legacy account
     setAccount(null);
     setAuthFlow("welcome");
     setTempUserData(null);
+    setEvents([]); // Clear events on logout
   };
 
-  const handlePairPartner = (partnerId: string, partnerName: string) => {
+  const handlePairPartner = async (partnerId: string, partnerName: string) => {
     if (account) {
-      const updatedAccount = { ...account, partnerId, partnerName };
-      setAccount(updatedAccount);
-      localStorage.setItem("pulseAccount", JSON.stringify(updatedAccount));
-      return true;
+      const success = await db.pairUsers(account.userId, partnerId);
+      if (success) {
+        // Get complete updated account info
+        const updatedAccount = await db.getCompleteAccount(account.userId);
+        if (updatedAccount) {
+          setAccount(updatedAccount);
+          localStorage.setItem("pulseAccount", JSON.stringify(updatedAccount));
+
+          // Refresh events to include partner's events
+          const events = await db.getEvents(account.userId);
+          setEvents(events);
+          return true;
+        }
+      }
     }
     return false;
   };
 
-  const handleAddEvent = (title: string, startDate: string) => {
-    const newEvent: Event = {
-      id: Date.now().toString(),
-      title,
-      startDate,
-      messages: [],
-    };
-    setEvents([...events, newEvent]);
+  const handleAddEvent = async (title: string, startDate: string) => {
+    if (account) {
+      const newEvent = await db.createEvent(
+        { title, startDate },
+        account.userId
+      );
+      if (newEvent) {
+        setEvents([...events, newEvent]);
+      }
+    }
     setShowAddForm(false);
   };
 
-  const handleDeleteEvent = (id: string) => {
-    setEvents(events.filter((e) => e.id !== id));
+  const handleDeleteEvent = async (id: string) => {
+    const success = await db.deleteEvent(id);
+    if (success) {
+      setEvents(events.filter((e) => e.id !== id));
+    }
   };
 
-  const handleUpdateEvent = (id: string, title: string) => {
-    setEvents(events.map((e) => (e.id === id ? { ...e, title } : e)));
+  const handleUpdateEvent = async (id: string, title: string) => {
+    const success = await db.updateEvent(id, title);
+    if (success) {
+      setEvents(events.map((e) => (e.id === id ? { ...e, title } : e)));
+    }
   };
 
-  const handleAddMessage = (
+  const handleAddMessage = async (
     eventId: string,
     text: string,
     author: "me" | "partner"
   ) => {
-    setEvents(
-      events.map((e) =>
-        e.id === eventId
-          ? {
-              ...e,
-              messages: [
-                ...e.messages,
-                {
-                  id: Date.now().toString(),
-                  text,
-                  createdAt: new Date().toISOString(),
-                  author,
-                },
-              ],
-            }
-          : e
-      )
-    );
+    if (account) {
+      const newMessage = await db.addMessage(
+        eventId,
+        text,
+        author,
+        account.userId
+      );
+      if (newMessage) {
+        setEvents(
+          events.map((e) =>
+            e.id === eventId
+              ? {
+                  ...e,
+                  messages: [...e.messages, newMessage],
+                }
+              : e
+          )
+        );
+      }
+    }
   };
 
   if (authFlow === "welcome") {
     return (
-      <WelcomeScreen onComplete={handleWelcomeComplete} language={language} />
+      <WelcomeScreen
+        onComplete={handleWelcomeComplete}
+        onLogin={handleLogin}
+        language={language}
+      />
     );
   }
 
@@ -279,7 +383,7 @@ export default function Home() {
         className="flex-1 overflow-hidden"
         style={{ height: "calc(100vh - 152px)" }}
       >
-        <div className="container mx-auto px-4 h-full max-w-2xl">
+        <div className="container mx-auto px-4 pt-6 h-full max-w-2xl">
           {currentView === "pulse" && (
             <>
               {showAddForm && (

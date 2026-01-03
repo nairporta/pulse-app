@@ -30,7 +30,7 @@ interface SettingsProps {
   language: "ja" | "en";
   onLanguageChange: (lang: "ja" | "en") => void;
   onLogout: () => void;
-  onPairPartner: (partnerId: string, partnerName: string) => boolean;
+  onPairPartner: (partnerId: string, partnerName: string) => Promise<boolean>;
 }
 
 const themes = [
@@ -122,7 +122,7 @@ export function Settings({
   };
 
   const handleCopyCode = async () => {
-    await navigator.clipboard.writeText(account.userId);
+    await navigator.clipboard.writeText(account.pairingCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -183,7 +183,7 @@ export function Settings({
               <span className="text-muted-foreground">{t.yourCode}</span>
               <div className="flex items-center gap-2">
                 <span className="font-mono font-semibold text-primary text-lg tracking-wide">
-                  {formatPairingCode(account.userId)}
+                  {formatPairingCode(account.pairingCode)}
                 </span>
                 <Button
                   variant="ghost"
@@ -210,7 +210,7 @@ export function Settings({
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">{t.partnerCode}</span>
                   <span className="font-mono font-semibold text-primary text-lg tracking-wide">
-                    {formatPairingCode(account.partnerId)}
+                    {account.partnerPairingCode ? formatPairingCode(account.partnerPairingCode) : "未取得"}
                   </span>
                 </div>
               </>

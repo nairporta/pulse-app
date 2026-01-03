@@ -7,6 +7,8 @@ export function generatePairingCode(): string {
   return code
 }
 
-export function formatPairingCode(code: string): string {
+export function formatPairingCode(code: string | undefined): string {
+  if (!code) return "未取得"
+  if (code.length < 6) return code // 短い場合はそのまま
   return code.slice(0, 3) + "-" + code.slice(3)
 }
