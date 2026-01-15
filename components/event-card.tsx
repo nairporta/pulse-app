@@ -64,23 +64,41 @@ export function EventCard({ event, language }: EventCardProps) {
     const now = new Date();
     const totalMs = now.getTime() - start.getTime();
 
-    // Calendar-based year calculation
-    let totalYears = now.getFullYear() - start.getFullYear();
-    let yearCheckDate = new Date(start);
-    yearCheckDate.setFullYear(start.getFullYear() + totalYears);
-    if (yearCheckDate > now) {
-      totalYears--;
+    // Calendar-based year calculation with fractional progress
+    let completedYears = now.getFullYear() - start.getFullYear();
+    const thisYearAnniversary = new Date(start);
+    thisYearAnniversary.setFullYear(now.getFullYear());
+    if (thisYearAnniversary > now) {
+      completedYears--;
     }
+    // Calculate progress toward next year anniversary
+    const lastYearAnniversary = new Date(start);
+    lastYearAnniversary.setFullYear(start.getFullYear() + completedYears);
+    const nextYearAnniversary = new Date(start);
+    nextYearAnniversary.setFullYear(start.getFullYear() + completedYears + 1);
+    const yearProgress =
+      (now.getTime() - lastYearAnniversary.getTime()) /
+      (nextYearAnniversary.getTime() - lastYearAnniversary.getTime());
+    const totalYears = completedYears + yearProgress;
 
-    // Calendar-based month calculation
-    let totalMonths =
+    // Calendar-based month calculation with fractional progress
+    let completedMonths =
       (now.getFullYear() - start.getFullYear()) * 12 +
       (now.getMonth() - start.getMonth());
-    let monthCheckDate = new Date(start);
-    monthCheckDate.setMonth(start.getMonth() + totalMonths);
-    if (monthCheckDate > now) {
-      totalMonths--;
+    const thisMonthAnniversary = new Date(start);
+    thisMonthAnniversary.setMonth(start.getMonth() + completedMonths);
+    if (thisMonthAnniversary > now) {
+      completedMonths--;
     }
+    // Calculate progress toward next month anniversary
+    const lastMonthAnniversary = new Date(start);
+    lastMonthAnniversary.setMonth(start.getMonth() + completedMonths);
+    const nextMonthAnniversary = new Date(start);
+    nextMonthAnniversary.setMonth(start.getMonth() + completedMonths + 1);
+    const monthProgress =
+      (now.getTime() - lastMonthAnniversary.getTime()) /
+      (nextMonthAnniversary.getTime() - lastMonthAnniversary.getTime());
+    const totalMonths = completedMonths + monthProgress;
 
     // Keep original calculations for days, hours, minutes, seconds
     const totalSeconds = totalMs / 1000;
@@ -88,12 +106,14 @@ export function EventCard({ event, language }: EventCardProps) {
     const totalHours = totalMinutes / 60;
     const totalDays = totalHours / 24;
 
+    const floorToOneDecimal = (n: number) => Math.floor(n * 10) / 10;
+
     return {
-      years: totalYears.toFixed(1),
-      months: totalMonths.toFixed(1),
-      days: totalDays.toFixed(1),
-      hours: totalHours.toFixed(1),
-      minutes: totalMinutes.toFixed(1),
+      years: floorToOneDecimal(totalYears).toFixed(1),
+      months: floorToOneDecimal(totalMonths).toFixed(1),
+      days: floorToOneDecimal(totalDays).toFixed(1),
+      hours: floorToOneDecimal(totalHours).toFixed(1),
+      minutes: floorToOneDecimal(totalMinutes).toFixed(1),
       seconds: Math.floor(totalSeconds),
     };
   };

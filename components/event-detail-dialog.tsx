@@ -18,20 +18,57 @@ export function EventDetailDialog({ event, open, onOpenChange, language }: Event
     const now = new Date()
     const totalMs = now.getTime() - start.getTime()
 
-    const msPerSecond = 1000
-    const msPerMinute = msPerSecond * 60
-    const msPerHour = msPerMinute * 60
-    const msPerDay = msPerHour * 24
-    const msPerMonth = msPerDay * 30.44 // Average month length
-    const msPerYear = msPerDay * 365.25 // Account for leap years
+    // Calendar-based year calculation with fractional progress
+    let completedYears = now.getFullYear() - start.getFullYear()
+    const thisYearAnniversary = new Date(start)
+    thisYearAnniversary.setFullYear(now.getFullYear())
+    if (thisYearAnniversary > now) {
+      completedYears--
+    }
+    // Calculate progress toward next year anniversary
+    const lastYearAnniversary = new Date(start)
+    lastYearAnniversary.setFullYear(start.getFullYear() + completedYears)
+    const nextYearAnniversary = new Date(start)
+    nextYearAnniversary.setFullYear(start.getFullYear() + completedYears + 1)
+    const yearProgress =
+      (now.getTime() - lastYearAnniversary.getTime()) /
+      (nextYearAnniversary.getTime() - lastYearAnniversary.getTime())
+    const totalYears = completedYears + yearProgress
+
+    // Calendar-based month calculation with fractional progress
+    let completedMonths =
+      (now.getFullYear() - start.getFullYear()) * 12 +
+      (now.getMonth() - start.getMonth())
+    const thisMonthAnniversary = new Date(start)
+    thisMonthAnniversary.setMonth(start.getMonth() + completedMonths)
+    if (thisMonthAnniversary > now) {
+      completedMonths--
+    }
+    // Calculate progress toward next month anniversary
+    const lastMonthAnniversary = new Date(start)
+    lastMonthAnniversary.setMonth(start.getMonth() + completedMonths)
+    const nextMonthAnniversary = new Date(start)
+    nextMonthAnniversary.setMonth(start.getMonth() + completedMonths + 1)
+    const monthProgress =
+      (now.getTime() - lastMonthAnniversary.getTime()) /
+      (nextMonthAnniversary.getTime() - lastMonthAnniversary.getTime())
+    const totalMonths = completedMonths + monthProgress
+
+    // Keep original calculations for days, hours, minutes, seconds
+    const totalSeconds = totalMs / 1000
+    const totalMinutes = totalSeconds / 60
+    const totalHours = totalMinutes / 60
+    const totalDays = totalHours / 24
+
+    const floorToOneDecimal = (n: number) => Math.floor(n * 10) / 10
 
     return {
-      years: (totalMs / msPerYear).toFixed(1),
-      months: (totalMs / msPerMonth).toFixed(1),
-      days: (totalMs / msPerDay).toFixed(1),
-      hours: (totalMs / msPerHour).toFixed(1),
-      minutes: (totalMs / msPerMinute).toFixed(1),
-      seconds: (totalMs / msPerSecond).toFixed(0),
+      years: floorToOneDecimal(totalYears).toFixed(1),
+      months: floorToOneDecimal(totalMonths).toFixed(1),
+      days: floorToOneDecimal(totalDays).toFixed(1),
+      hours: floorToOneDecimal(totalHours).toFixed(1),
+      minutes: floorToOneDecimal(totalMinutes).toFixed(1),
+      seconds: Math.floor(totalSeconds),
     }
   }
 
